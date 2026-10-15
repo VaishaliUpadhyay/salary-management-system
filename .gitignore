@@ -149,5 +149,7 @@ vite.config.ts.timestamp-*
 # Turbo Repo
 .turbo
 
-dist/
+server/dist
+client/dist
 .DS_Store
+server/.env

@@ -1,4 +1,6 @@
-# REST API contracts — proposed for review
+# REST API contracts — approved design
+
+Approved by the user for Milestone 1 on 2026-10-15. The design-stage descriptions below are preserved; implementation evidence and remaining live checks are tracked in [milestone-1.md](milestone-1.md).
 
 Base path `/api/v1`. JSON except multipart CSV. See [database design](database-design.md) for types and calculation rules and [architecture](architecture.md) for boundaries. All routes require an authenticated HR session except login and a minimal health endpoint. No application code is included here.
 

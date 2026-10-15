@@ -53,3 +53,17 @@ Implementation must wait for design approval under AGENTS.md. No application cod
 - CSV policy/limits/transaction model remain unchanged. Explicitly document committed-prefix/unknown-outcome risk from synchronous timeouts and measure against actual host deadlines. A lower limit or background job is a separate approval decision only if required by measurements.
 - Keep direct session/CSRF middleware and remove anonymous CSRF contexts/custom HMAC machinery. Login uses JSON-only plus exact Origin validation; authenticated writes also require a random session CSRF token.
 - No new product ambiguity blocks this documentation update. Implementation remains unapproved; exact dependency/hosting choices and performance evidence will be resolved during the authorized implementation/deployment milestones. No application code or database operations were performed.
+
+### Milestone 1 implementation — design approved, 2026-10-15
+
+The user approved the final design and authorized Milestone 1; earlier “proposed”/“implementation unapproved” statuses above describe the prior design stage and are superseded by that approval.
+
+- npm workspaces retain the approved client/server modular-monolith structure. Node 24.x, TypeScript 5.9.3, React 19, Vite 8, Express 5 and Prisma 6.19.3 are pinned in manifests/lockfile. Prisma 6 matches the approved schema/migration workflow; no new database adapter or ORM is introduced.
+- Use reviewed generated migration SQL with explicit InnoDB, ASCII binary code/token collations and named CHECK constraints; preserve these manual additions in later migrations. The runtime-role template is operator-managed and does not run automatically.
+- Synthetic fixtures use a small fixed-seed generator and integer-cent money arithmetic rather than a large random-data dependency. One transaction/batches of 500 avoids 30,700 individual insert requests; empty-table refusal, explicit database-name acknowledgement and an advisory lock protect against accidental reseeding. This implements the already approved insert-only policy.
+- Override deepmerge-ts to 8.0.0 to address the Prisma tooling advisory. Audit reports zero vulnerabilities; schema validation/generation pass with the override. Do not force a Prisma downgrade or change architecture to satisfy audit output.
+- Live database tests remain separate and fail setup when missing configuration. No live MySQL was available; SQL constraint/grant behavior and seed execution remain unverified, as recorded in [milestone-1.md](milestone-1.md).
+
+### Live MySQL verification follow-up — 2026-10-15
+
+Development target is salary_management_dev; correct the operator role template and environment example accordingly. MySQL 8.0.46 migration, persistent seed and seven integration tests passed. A separate newly created salary_management_m1_test_20261015 schema isolates rollback-based tests from the populated development database; retain it without reset/drop. Runtime-role grants are still operator-managed and not applied. The configured administrative connection is appropriate only for development migration/seed validation, not future application runtime. MySQL warning diagnostics cannot be prepared through Prisma; record the verified limitation for the later analytics implementation rather than introducing a new driver in this milestone.
