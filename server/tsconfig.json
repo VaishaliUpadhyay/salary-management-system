@@ -1,5 +1,5 @@
 {
   "extends":"../tsconfig.base.json",
   "compilerOptions":{"module":"NodeNext","moduleResolution":"NodeNext","types":["node"],"noEmit":true},
-  "include":["src","prisma/**/*.ts","test","vitest*.ts"]
+  "include":["src","benchmarks/**/*.ts","prisma/**/*.ts","test","vitest*.ts"]
 }

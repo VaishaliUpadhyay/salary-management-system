@@ -1,0 +1,116 @@
+{
+  "measuredAtUtc": "2026-10-17T04:56:11.468Z",
+  "node": "v24.20.0",
+  "platform": "darwin",
+  "arch": "arm64",
+  "cpu": "Apple M1",
+  "logicalCpus": 8,
+  "hostMemoryGiB": 8,
+  "database": {
+    "version": "8.0.46",
+    "divisionPrecision": "4",
+    "sqlMode": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"
+  },
+  "employees": 10002,
+  "salaries": 30703,
+  "warmupRequests": 20,
+  "workforceSalaryRatesUnchanged": true,
+  "results": [
+    {
+      "name": "summary-usd",
+      "path": "/analytics/compensation?reportingCurrency=USD",
+      "requests": 1000,
+      "concurrency": 10,
+      "coldMs": 191.77,
+      "coldStatus": 200,
+      "p50Ms": 281.52,
+      "p95Ms": 395.92,
+      "maxMs": 574.04,
+      "errors": 0,
+      "elapsedSeconds": 29.25
+    },
+    {
+      "name": "country-eur",
+      "path": "/analytics/compensation?reportingCurrency=EUR&groupBy=country",
+      "requests": 1000,
+      "concurrency": 10,
+      "coldMs": 143.61,
+      "coldStatus": 200,
+      "p50Ms": 344.47,
+      "p95Ms": 488.62,
+      "maxMs": 660.77,
+      "errors": 0,
+      "elapsedSeconds": 35.91
+    },
+    {
+      "name": "department-usd",
+      "path": "/analytics/compensation?reportingCurrency=USD&groupBy=department",
+      "requests": 1000,
+      "concurrency": 10,
+      "coldMs": 139.27,
+      "coldStatus": 200,
+      "p50Ms": 366.35,
+      "p95Ms": 491.1,
+      "maxMs": 739.75,
+      "errors": 0,
+      "elapsedSeconds": 37.72
+    },
+    {
+      "name": "designation-inr",
+      "path": "/analytics/compensation?reportingCurrency=INR&groupBy=designation",
+      "requests": 1000,
+      "concurrency": 10,
+      "coldMs": 181.35,
+      "coldStatus": 200,
+      "p50Ms": 375.28,
+      "p95Ms": 500.02,
+      "maxMs": 785.3,
+      "errors": 0,
+      "elapsedSeconds": 38.66
+    },
+    {
+      "name": "combined-filters",
+      "path": "/analytics/compensation?reportingCurrency=USD&groupBy=designation&countryId=3&departmentId=6&designationId=16",
+      "requests": 1000,
+      "concurrency": 10,
+      "coldMs": 21.95,
+      "coldStatus": 200,
+      "p50Ms": 19.59,
+      "p95Ms": 31.68,
+      "maxMs": 90.9,
+      "errors": 0,
+      "elapsedSeconds": 2.1
+    },
+    {
+      "name": "employee-late-page",
+      "path": "/employees?page=300&pageSize=25",
+      "requests": 1000,
+      "concurrency": 10,
+      "coldMs": 19.95,
+      "coldStatus": 200,
+      "p50Ms": 25.98,
+      "p95Ms": 36.46,
+      "maxMs": 58.01,
+      "errors": 0,
+      "elapsedSeconds": 2.72
+    },
+    {
+      "name": "employee-contains",
+      "path": "/employees?q=employee&pageSize=25",
+      "requests": 1000,
+      "concurrency": 10,
+      "coldMs": 12.85,
+      "coldStatus": 200,
+      "p50Ms": 20.13,
+      "p95Ms": 33.62,
+      "maxMs": 134.96,
+      "errors": 0,
+      "elapsedSeconds": 2.28
+    }
+  ],
+  "plan": [
+    {
+      "f0": "-> Sort: ranked.group_id  (actual time=133..133 rows=9 loops=1)\n    -> Table scan on <temporary>  (actual time=133..133 rows=9 loops=1)\n        -> Aggregate using temporary table  (actual time=133..133 rows=9 loops=1)\n            -> Table scan on ranked  (cost=2.5..2.5 rows=0) (actual time=108..110 rows=19202 loops=1)\n                -> Materialize CTE ranked  (cost=0..0 rows=0) (actual time=108..108 rows=19202 loops=1)\n                    -> Window aggregate with buffering: row_number() OVER ranking, count(converted.`value`) OVER ranking  (actual time=95.4..105 rows=19202 loops=1)\n                        -> Sort: expanded.group_id, `(converted.``value`` is null)`, expanded.`value`, expanded.id  (actual time=89.5..90.5 rows=19202 loops=1)\n                            -> Stream results  (cost=935 rows=0) (actual time=70..76.6 rows=19202 loops=1)\n                                -> Inner hash join (no condition)  (cost=935 rows=0) (actual time=70..71.8 rows=19202 loops=1)\n                                    -> Table scan on converted  (cost=38909..38909 rows=0) (actual time=69.9..70.7 rows=9601 loops=1)\n                                        -> Materialize CTE converted  (cost=38906..38906 rows=0) (actual time=69.9..69.9 rows=9601 loops=1)\n                                            -> Nested loop left join  (cost=38906 rows=0) (actual time=34.6..64.2 rows=9601 loops=1)\n                                                -> Nested loop left join  (cost=20321 rows=0) (actual time=34.6..47.6 rows=9601 loops=1)\n                                                    -> Nested loop inner join  (cost=1737 rows=4954) (actual time=0.0629..6.01 rows=9601 loops=1)\n                                                        -> Covering index scan on d using designations_department_id_name_key  (cost=2.65 rows=24) (actual time=0.0147..0.0201 rows=24 loops=1)\n                                                        -> Index lookup on e using employees_designation_id_is_active_id_idx (designation_id=d.id, is_active=1)  (cost=52.5 rows=206) (actual time=0.0133..0.231 rows=400 loops=24)\n                                                    -> Index lookup on l using <auto_key1> (employee_id=e.id)  (cost=0.25..3.75 rows=15) (actual time=0.00407..0.00421 rows=0.99 loops=9601)\n                                                        -> Materialize CTE latest  (cost=0..0 rows=0) (actual time=34.5..34.5 rows=9501 loops=1)\n                                                            -> Table scan on <temporary>  (actual time=28.7..29.5 rows=9501 loops=1)\n                                                                -> Aggregate using temporary table  (actual time=28.7..28.7 rows=9501 loops=1)\n                                                                    -> Nested loop inner join  (cost=3279 rows=5103) (actual time=0.0393..22.6 rows=28501 loops=1)\n                                                                        -> Nested loop inner join  (cost=506 rows=4954) (actual time=0.0337..2.4 rows=9601 loops=1)\n                                                                            -> Covering index scan on d using designations_code_key  (cost=2.65 rows=24) (actual time=0.0114..0.0157 rows=24 loops=1)\n                                                                            -> Covering index lookup on e using employees_designation_id_is_active_id_idx (designation_id=d.id, is_active=1)  (cost=1.19 rows=206) (actual time=0.00693..0.0781 rows=400 loops=24)\n                                                                        -> Filter: (s.effective_date <= DATE'2026-10-17')  (cost=0.251 rows=1.03) (actual time=0.0013..0.00186 rows=2.97 loops=9601)\n                                                                            -> Covering index lookup on s using salary_records_employee_id_effective_date_key (employee_id=e.id)  (cost=0.251 rows=3.09) (actual time=0.00118..0.00155 rows=3.03 loops=9601)\n                                                -> Single-row index lookup on s using salary_records_employee_id_effective_date_key (employee_id=l.employee_id, effective_date=l.effective_date)  (cost=0.25 rows=1) (actual time=0.00158..0.0016 rows=0.99 loops=9601)\n                                    -> Hash\n                                        -> Table scan on dimension  (cost=1.46..2.73 rows=2) (actual time=0.00329..0.00358 rows=2 loops=1)\n                                            -> Union all materialize  (cost=0.2..0.2 rows=2) (actual time=0.0025..0.0025 rows=2 loops=1)\n                                                -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=42e-6..84e-6 rows=1 loops=1)\n                                                -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=84e-6..84e-6 rows=1 loops=1)\n"
+    }
+  ]
+}

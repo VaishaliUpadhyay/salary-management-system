@@ -67,3 +67,12 @@ The user approved the final design and authorized Milestone 1; earlier “propos
 ### Live MySQL verification follow-up — 2026-10-15
 
 Development target is salary_management_dev; correct the operator role template and environment example accordingly. MySQL 8.0.46 migration, persistent seed and seven integration tests passed. A separate newly created salary_management_m1_test_20261015 schema isolates rollback-based tests from the populated development database; retain it without reset/drop. Runtime-role grants are still operator-managed and not applied. The configured administrative connection is appropriate only for development migration/seed validation, not future application runtime. MySQL warning diagnostics cannot be prepared through Prisma; record the verified limitation for the later analytics implementation rather than introducing a new driver in this milestone.
+
+### Milestone 3 precision decision — 2026-10-17
+
+The user explicitly approved **“Use Prisma with range checks”** after being told MySQL diagnostic statements cannot be prepared through Prisma. This supersedes the proposed direct numeric-warning inspection requirement for reporting; no driver or schema change is introduced.
+
+- Keep the approved typed multiply-then-divide expression, DECIMAL(65,24) computation values, SQL aggregates and final half-up rounding. Verify `div_precision_increment=4` on the transaction's actual pooled connection, restoring/verifying it when necessary.
+- Before SQL conversion/aggregation, check conservative per-currency count × maximum bounds with a local 100-digit decimal context, reject out-of-range bucket casts, and map database numeric errors to `REPORT_NUMERIC_RANGE_EXCEEDED` without partial results. Monetary aggregation remains in MySQL; JavaScript Number is used only for counts/IDs/timing.
+- Trade-off: no direct SELECT-warning inspection is claimed. Conservative bounds can reject a safe report when its population is very heterogeneous near the extreme range. Exact finite computation precision and domain/schema constraints remain necessary; real MySQL extrema and rounding tests validate the expressions.
+- MySQL restriction reference: [prepared-statement diagnostics restrictions](https://dev.mysql.com/doc/refman/8.0/en/sql-prepared-statements.html). No live FX, cache, new service, historical-workforce reporting or schema/index changes are introduced.

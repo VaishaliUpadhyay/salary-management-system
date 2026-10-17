@@ -14,7 +14,8 @@
     "db:generate": "prisma generate",
     "db:status": "prisma migrate status",
     "db:migrate": "prisma migrate deploy",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "bench:analytics": "tsx benchmarks/analytics.ts"
   },
   "dependencies": {
     "@prisma/client": "6.19.3",
