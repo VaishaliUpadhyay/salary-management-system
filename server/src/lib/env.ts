@@ -5,7 +5,7 @@ const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
   DATABASE_URL: z.string().url().startsWith('mysql://'),
-  APP_ORIGIN: z.string().url(),
+  APP_ORIGIN: z.string().url().refine(value => URL.canParse(value) && ['http:', 'https:'].includes(new URL(value).protocol) && new URL(value).origin === value, 'Use an exact origin without a path'),
 });
 
 export function readEnv(source: NodeJS.ProcessEnv = process.env) {
@@ -14,5 +14,6 @@ export function readEnv(source: NodeJS.ProcessEnv = process.env) {
     // Report field names only: never echo connection strings or secret values.
     throw new Error(`Invalid environment fields: ${[...new Set(result.error.issues.map(i => i.path.join('.')))].join(', ')}`);
   }
+  if (result.data.NODE_ENV === 'production' && !result.data.APP_ORIGIN.startsWith('https://')) throw new Error('Production APP_ORIGIN must use HTTPS');
   return result.data;
 }
