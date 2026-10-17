@@ -76,3 +76,10 @@ The user explicitly approved **“Use Prisma with range checks”** after being 
 - Before SQL conversion/aggregation, check conservative per-currency count × maximum bounds with a local 100-digit decimal context, reject out-of-range bucket casts, and map database numeric errors to `REPORT_NUMERIC_RANGE_EXCEEDED` without partial results. Monetary aggregation remains in MySQL; JavaScript Number is used only for counts/IDs/timing.
 - Trade-off: no direct SELECT-warning inspection is claimed. Conservative bounds can reject a safe report when its population is very heterogeneous near the extreme range. Exact finite computation precision and domain/schema constraints remain necessary; real MySQL extrema and rounding tests validate the expressions.
 - MySQL restriction reference: [prepared-statement diagnostics restrictions](https://dev.mysql.com/doc/refman/8.0/en/sql-prepared-statements.html). No live FX, cache, new service, historical-workforce reporting or schema/index changes are introduced.
+
+## Milestone 4 implementation choices (2026-10-17)
+
+- User explicitly approved implementing the three missing, contracted authenticated GET lists for countries, departments and designations. No master writes, schema changes or additional APIs were authorized or added.
+- Frontend uses React context for session state, local feature state and hash URLs for navigation/filter persistence. This avoids a router/state framework and server-side route rewrites while keeping the existing modular-monolith/same-origin architecture. Small lookup catalogs load pagewise; employee and salary collections stay server-paginated.
+- shadcn-style components are locally owned, using CVA and Radix Dialog for keyboard/focus behavior. Recharts is lazy-loaded with the dashboard; charts use count values and exact API monetary strings remain unconverted in labels/tables.
+- Component and browser UI tests mock APIs; real endpoint/database behavior is covered by isolated MySQL integration. This avoids changing the seeded development workforce during frontend verification. A full live browser workflow remains a review/deployment test, not a claimed result here.

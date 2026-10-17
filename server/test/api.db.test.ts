@@ -88,7 +88,7 @@ afterAll(async () => {
 
 describe('authentication and request security', () => {
   it.each([
-    ['get', '/employees'], ['post', '/employees'], ['get', '/employees/1'], ['patch', '/employees/1'],
+    ['get', '/countries'], ['get', '/departments'], ['get', '/designations'], ['get', '/employees'], ['post', '/employees'], ['get', '/employees/1'], ['patch', '/employees/1'],
     ['post', '/employees/1/deactivate'], ['get', '/employees/1/salary-records'], ['post', '/employees/1/salary-records'],
     ['get', '/employees/1/salary-records/1'], ['get', '/auth/session'], ['get', '/auth/csrf'], ['post', '/auth/logout'],
   ] as const)('protects anonymous %s %s', async (method, path) => {
@@ -349,5 +349,32 @@ describe('restricted database permissions', () => {
     await expect(runtime.$executeRaw`DELETE FROM salary_records WHERE 1=0`).rejects.toMatchObject({ code: 'P2010', meta: { code: '1142' } });
     await expect(verifyRuntimePermissions(runtime)).resolves.toBeUndefined();
     await expect(verifyRuntimePermissions(owner)).rejects.toThrow('Unsafe DATABASE_URL');
+  });
+});
+
+
+describe('approved read-only master catalogs', () => {
+  it('paginates and sorts countries with a total count', async () => {
+    const result = await get('/countries?pageSize=1&page=1');
+    expect(result.status).toBe(200);
+    expect(result.body.pagination).toEqual({ page: 1, pageSize: 1, total: 2, totalPages: 2 });
+    expect(result.body.data[0].name).toBe('India');
+    expect((await get('/countries?pageSize=1&page=2')).body.data[0].name).toBe('United States');
+  });
+  it('filters designations by department and rejects unknown filters', async () => {
+    const result = await get(`/designations?departmentId=${departmentId}`);
+    expect(result.status).toBe(200);
+    expect(result.body.data.map((row: { id: number }) => row.id)).toEqual([designationId]);
+    expect((await get('/designations?departmentId=4294967295')).status).toBe(422);
+    expect((await get('/countries?departmentId=1')).status).toBe(400);
+    expect((await get('/departments?pageSize=101')).status).toBe(400);
+  });
+  it('defaults to active catalog entries and supports inactive/all', async () => {
+    await owner.department.update({ where: { id: departmentId }, data: { isActive: false } });
+    try {
+      expect((await get('/departments')).body.data.map((row: { id: number }) => row.id)).toEqual([otherDepartmentId]);
+      expect((await get('/departments?status=inactive')).body.data.map((row: { id: number }) => row.id)).toEqual([departmentId]);
+      expect((await get('/departments?status=all')).body.pagination.total).toBe(2);
+    } finally { await owner.department.update({ where: { id: departmentId }, data: { isActive: true } }); }
   });
 });

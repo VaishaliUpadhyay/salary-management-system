@@ -1,4 +1,5 @@
 import express from "express";
+import { masterDataRoutes } from "./modules/master-data/routes.js";
 import { randomUUID } from "node:crypto";
 import type { PrismaClient } from "@prisma/client";
 import { ApiError, errorHandler } from "./lib/errors.js";
@@ -45,7 +46,7 @@ export function createApp({
     auth.mutations,
     employeeRoutes(db),
   );
-  app.use("/api/v1", auth.requireSession, analyticsRoutes(db));
+  app.use("/api/v1", auth.requireSession, masterDataRoutes(db), analyticsRoutes(db));
   app.use(() => {
     throw new ApiError(404, "NOT_FOUND", "Route not found");
   });

@@ -153,3 +153,6 @@ server/dist
 client/dist
 .DS_Store
 server/.env
+# Browser test artifacts
+playwright-report/
+test-results/
