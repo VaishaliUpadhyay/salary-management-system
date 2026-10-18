@@ -83,3 +83,11 @@ The user explicitly approved **“Use Prisma with range checks”** after being 
 - Frontend uses React context for session state, local feature state and hash URLs for navigation/filter persistence. This avoids a router/state framework and server-side route rewrites while keeping the existing modular-monolith/same-origin architecture. Small lookup catalogs load pagewise; employee and salary collections stay server-paginated.
 - shadcn-style components are locally owned, using CVA and Radix Dialog for keyboard/focus behavior. Recharts is lazy-loaded with the dashboard; charts use count values and exact API monetary strings remain unconverted in labels/tables.
 - Component and browser UI tests mock APIs; real endpoint/database behavior is covered by isolated MySQL integration. This avoids changing the seeded development workforce during frontend verification. A full live browser workflow remains a review/deployment test, not a claimed result here.
+
+## Milestone 5 implementation choices (2026-10-18)
+
+- Reused the approved synchronous, per-row transaction design and unchanged-master policy. Busboy/csv-parse are narrowly scoped parsing dependencies; bounded upload and complete syntax/header/duplicate preflight precede writes. No job queue, upload storage or schema changes.
+- Existing session/Origin/CSRF middleware is shared with multipart imports; JSON content-type enforcement remains on existing mutation routes. 503 import failures retain the standard error envelope and add `data` with completed progress plus `processingIncomplete:true`.
+- Reference catalogs load once per request to avoid repeated lookups. Existing master data is small and has no write APIs; future concurrent administrative retirement requires a consistency review. Salary/employee checks stay under row locks and uniqueness constraints.
+- Explicitly requested downloadable import errors are limited to row identifiers and validation messages, with spreadsheet-formula neutralization. This does not introduce generic compensation export.
+- Local 10,000-row creation measured 29.96 seconds in the final run (37.22 seconds initially); retain the documented unknown-outcome/timeout warning and explicit replay. Host deadline changes or background processing remain separate deployment/architecture decisions, not silently added here.

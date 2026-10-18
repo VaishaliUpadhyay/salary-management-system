@@ -1,7 +1,8 @@
+import { InputError, fieldGuidance } from "../../lib/errors";
 import { useState, type FormEvent } from "react";
 import type { Catalog, Employee, Single } from "../../lib/types";
 import { api } from "../../lib/api";
-import { salaryError, validDate } from "../../lib/format";
+import { salaryIssue, validDate } from "../../lib/format";
 import { Button } from "../../components/ui/button";
 import { Field, ErrorNotice } from "../../components/common";
 export function EmployeeForm({
@@ -44,17 +45,17 @@ export function EmployeeForm({
     setError(null);
     const hireDate = get("hireDate");
     if (!validDate(hireDate)) {
-      setError(new Error("Enter a valid hire date."));
+      setError(new InputError("hireDate", fieldGuidance.hireDate!));
       return;
     }
     if (!employee) {
-      const invalid = salaryError(
+      const invalid = salaryIssue(
         get("amount"),
         get("effectiveDate"),
         hireDate,
       );
       if (invalid) {
-        setError(new Error(invalid));
+        setError(invalid);
         return;
       }
     }
@@ -92,10 +93,10 @@ export function EmployeeForm({
   }
   return (
     <form onSubmit={submit} className="space-y-5">
-      {error != null && <ErrorNotice error={error} />}
+      {error != null && <ErrorNotice error={error} inlineFields={["employeeCode", "name", "email", "countryId", "designationId", "hireDate", "amount", "currencyCode", "effectiveDate"]} />}
       <div className="form-grid">
         {!employee && (
-          <Field label="Employee code" id="employeeCode">
+          <Field error={error} label="Employee code" id="employeeCode">
             <input
               id="employeeCode"
               name="employeeCode"
@@ -106,7 +107,7 @@ export function EmployeeForm({
             />
           </Field>
         )}
-        <Field label="Full name" id="name">
+        <Field error={error} label="Full name" id="name">
           <input
             id="name"
             name="name"
@@ -116,7 +117,7 @@ export function EmployeeForm({
             autoComplete="name"
           />
         </Field>
-        <Field label="Email address" id="employee-email">
+        <Field error={error} label="Email address" id="employee-email">
           <input
             id="employee-email"
             name="email"
@@ -127,7 +128,7 @@ export function EmployeeForm({
             autoComplete="email"
           />
         </Field>
-        <Field label="Country" id="countryId">
+        <Field error={error} label="Country" id="countryId">
           <select
             id="countryId"
             name="countryId"
@@ -145,7 +146,7 @@ export function EmployeeForm({
               ))}
           </select>
         </Field>
-        <Field label="Department" id="departmentId">
+        <Field error={error} label="Department" id="departmentId">
           <select
             id="departmentId"
             value={department}
@@ -164,7 +165,7 @@ export function EmployeeForm({
             ))}
           </select>
         </Field>
-        <Field label="Designation" id="designationId">
+        <Field error={error} label="Designation" id="designationId">
           <select
             id="designationId"
             required
@@ -180,7 +181,7 @@ export function EmployeeForm({
             ))}
           </select>
         </Field>
-        <Field label="Hire date" id="hireDate">
+        <Field error={error} label="Hire date" id="hireDate">
           <input
             id="hireDate"
             name="hireDate"
@@ -196,7 +197,7 @@ export function EmployeeForm({
         <fieldset>
           <legend>Initial annual base salary</legend>
           <div className="form-grid">
-            <Field label="Annual amount" id="amount">
+            <Field error={error} label="Annual amount" id="amount">
               <input
                 id="amount"
                 name="amount"
@@ -206,7 +207,7 @@ export function EmployeeForm({
                 placeholder="75000.00"
               />
             </Field>
-            <Field label="Salary currency" id="currencyCode">
+            <Field error={error} label="Salary currency" id="currencyCode">
               <select
                 id="currencyCode"
                 name="currencyCode"
@@ -223,7 +224,7 @@ export function EmployeeForm({
                   ))}
               </select>
             </Field>
-            <Field label="Effective date" id="effectiveDate">
+            <Field error={error} label="Effective date" id="effectiveDate">
               <input
                 id="effectiveDate"
                 name="effectiveDate"

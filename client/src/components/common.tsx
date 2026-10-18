@@ -1,6 +1,6 @@
-import type { ReactNode } from "react";
+import { cloneElement, isValidElement, type ReactNode, type ReactElement } from "react";
 import { LoaderCircle, AlertCircle } from "lucide-react";
-import { ApiError } from "../lib/api";
+import { presentation } from "../lib/errors";
 import { Button } from "./ui/button";
 export function Loading({ label = "Loading…" }: { label?: string }) {
   return (
@@ -13,34 +13,29 @@ export function Loading({ label = "Loading…" }: { label?: string }) {
 export function ErrorNotice({
   error,
   retry,
+  inlineFields = [],
 }: {
   error: unknown;
   retry?: () => void;
+  inlineFields?: string[];
 }) {
-  const e = error instanceof Error ? error : new Error("Something went wrong.");
-  const advice =
-    e instanceof ApiError && e.code === "MISSING_EXCHANGE_RATES"
-      ? "This report is unavailable because required exchange rates are missing. Choose another reporting date or currency."
-      : e instanceof ApiError && e.code === "REPORT_NUMERIC_RANGE_EXCEEDED"
-        ? "This report exceeds the supported numerical range. Narrow the filters or choose another currency."
-        : null;
+  const view = presentation(error);
+  const fields = view.fields.filter(issue => !inlineFields.includes(issue.field) && issue.message !== view.title);
+  if (view.fields.length > 0 && view.fields.every(issue => inlineFields.includes(issue.field))) return null;
   return (
     <div role="alert" className="error-box">
-      <AlertCircle size={20} />
-      <div>
-        <strong>{advice ?? e.message}</strong>
-        {e instanceof ApiError && e.details.length > 0 && (
+      <AlertCircle size={18} aria-hidden="true" />
+      <div className="error-content">
+        <strong>{view.title}</strong>
+        {fields.length > 0 && (
           <ul>
-            {e.details.map((d, i) => (
+            {fields.map((d, i) => (
               <li key={i}>
-                {d.field ? `${d.field}: ` : ""}
+                {`${d.label}: `}
                 {d.message}
               </li>
             ))}
           </ul>
-        )}
-        {e instanceof ApiError && e.requestId && (
-          <small>Reference: {e.requestId}</small>
         )}
         {retry && (
           <Button variant="outline" onClick={retry}>
@@ -59,16 +54,25 @@ export function Field({
   id,
   children,
   hint,
+  error,
+  field,
 }: {
   label: string;
   id: string;
   children: ReactNode;
   hint?: string;
+  error?: unknown;
+  field?: string;
 }) {
+  const control = isValidElement(children) ? children as ReactElement<{ name?: string; required?: boolean; 'aria-describedby'?: string | undefined; 'aria-invalid'?: boolean }> : null;
+  const key = field ?? control?.props.name ?? id;
+  const issues = presentation(error).fields.filter(issue => issue.field === key);
+  const describedBy = [...new Set([...(control?.props['aria-describedby'] ?? '').split(' '), hint ? `${id}-hint` : '', issues.length ? `${id}-error` : ''].filter(Boolean))].join(' ');
   return (
     <div className="field">
-      <label htmlFor={id}>{label}</label>
-      {children}
+      <div className="field-label"><label htmlFor={id}>{label}</label>{control?.props.required && <span className="muted" aria-hidden="true">Required</span>}</div>
+      {control ? cloneElement(control, { 'aria-invalid': issues.length > 0, 'aria-describedby': describedBy || undefined }) : children}
+      {issues.length > 0 && <small id={`${id}-error`} role="alert" className="field-error">{issues.map(issue => issue.message).join(' ')}</small>}
       {hint && (
         <small id={`${id}-hint`} className="muted">
           {hint}

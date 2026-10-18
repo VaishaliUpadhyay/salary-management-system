@@ -4,8 +4,9 @@ export class ApiError extends Error {
     message: string,
     public status = 0,
     public code = "NETWORK_ERROR",
-    public details: { field?: string; message: string }[] = [],
+    public details: { field?: string; code?: string; message: string }[] = [],
     public requestId?: string,
+    public partialData?: unknown,
   ) {
     super(message);
   }
@@ -26,12 +27,17 @@ export async function api<T>(
       signal: options.signal ?? null,
       headers: {
         Accept: "application/json",
-        ...(options.body !== undefined
+        ...(options.body !== undefined && !(options.body instanceof FormData)
           ? { "Content-Type": "application/json" }
           : {}),
         ...(options.method && csrf ? { "X-CSRF-Token": csrf } : {}),
       },
-      body: options.body === undefined ? null : JSON.stringify(options.body),
+      body:
+        options.body instanceof FormData
+          ? options.body
+          : options.body === undefined
+            ? null
+            : JSON.stringify(options.body),
     });
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") throw error;
@@ -39,6 +45,7 @@ export async function api<T>(
       options.method
         ? "Connection interrupted. Check whether your change was saved before trying again."
         : "Unable to connect. Check your connection and try again.",
+      0, options.method ? "NETWORK_WRITE_ERROR" : "NETWORK_ERROR",
     );
   }
   if (!response.ok) {
@@ -53,13 +60,15 @@ export async function api<T>(
     throw new ApiError(
       error?.message ?? "The request could not be completed.",
       response.status,
-      error?.code ?? "REQUEST_FAILED",
-      error?.details ?? [],
-      error?.requestId,
+      typeof error?.code === "string" ? error.code : "REQUEST_FAILED",
+      Array.isArray(error?.details) ? error.details.filter((d: unknown) => d && typeof d === "object" && ("field" in d ? typeof d.field === "string" : true)) : [],
+      typeof error?.requestId === "string" ? error.requestId : response.headers.get("x-request-id") ?? undefined,
+      payload?.data,
     );
   }
   if (response.status === 204) return undefined as T;
-  return response.json() as Promise<T>;
+  try { return await response.json() as T; }
+  catch { throw new ApiError("Invalid response", response.status, options.method ? "INVALID_WRITE_RESPONSE" : "INVALID_RESPONSE", [], response.headers.get("x-request-id") ?? undefined); }
 }
 async function allMasters(path: string, signal: AbortSignal) {
   const rows: Master[] = [];

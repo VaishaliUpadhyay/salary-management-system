@@ -156,3 +156,6 @@ server/.env
 # Browser test artifacts
 playwright-report/
 test-results/
+
+# Private database cleanup manifests and backups
+.local-db-cleanup/

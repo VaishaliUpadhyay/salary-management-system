@@ -1,3 +1,5 @@
+import { HEADERS, MAX_BYTES, MAX_ROWS, parseCsv } from "../src/modules/imports/csv.js";
+import { importRows } from "../src/modules/imports/service.js";
 import { randomBytes } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
 import { hash, argon2id } from 'argon2';
@@ -376,5 +378,361 @@ describe('approved read-only master catalogs', () => {
       expect((await get('/departments?status=inactive')).body.data.map((row: { id: number }) => row.id)).toEqual([departmentId]);
       expect((await get('/departments?status=all')).body.pagination.total).toBe(2);
     } finally { await owner.department.update({ where: { id: departmentId }, data: { isActive: true } }); }
+  });
+});
+
+describe("CSV import HTTP and real transaction behavior", () => {
+  const header = HEADERS.join(",");
+  const csvRow = (overrides: Record<string, string> = {}) => ({
+    employee_code: `${prefix}CSV${++sequence}`,
+    name: "CSV Person",
+    email: "csv@example.test",
+    country_code: "US",
+    department_code: `${prefix}ENG`,
+    designation_code: `${prefix}ENG1`,
+    hire_date: "2020-01-01",
+    annual_base_salary: "100.00",
+    currency_code: "USD",
+    effective_date: "2024-01-01",
+    ...overrides,
+  });
+  const csv = (rows: Record<string, string>[]) =>
+    Buffer.from(
+      header +
+        "\n" +
+        rows
+          .map((r) =>
+            HEADERS.map((h) => '"' + r[h]!.replace(/"/g, '""') + '"').join(","),
+          )
+          .join("\n"),
+    );
+  const upload = (buffer: Buffer, filename = "employees.csv") =>
+    request(app)
+      .post("/api/v1/imports/employees")
+      .set("Cookie", cookie)
+      .set("Origin", origin)
+      .set("X-CSRF-Token", csrf)
+      .attach("file", buffer, filename);
+  it("creates, skips decimal-equivalent replay, adds revision and rejects conflict", async () => {
+    const row = csvRow();
+    const first = await upload(csv([row]));
+    expect(first.status).toBe(200);
+    expect(first.body.data.counts).toEqual({
+      created: 1,
+      updated: 0,
+      skipped: 0,
+      rejected: 0,
+    });
+    expect(
+      (await upload(csv([{ ...row, annual_base_salary: "100" }]))).body.data
+        .counts.skipped,
+    ).toBe(1);
+    expect(
+      (
+        await upload(
+          csv([{ ...row, effective_date: "2028-01-01", currency_code: "EUR" }]),
+        )
+      ).body.data.counts.updated,
+    ).toBe(1);
+    const conflict = await upload(csv([{ ...row, annual_base_salary: "101" }]));
+    expect(conflict.body.data.rows[0].errors[0].code).toBe(
+      "SALARY_DATE_CONFLICT",
+    );
+  });
+  it("rejects master mismatches even when salary is identical", async () => {
+    const row = csvRow();
+    await upload(csv([row]));
+    const result = await upload(csv([{ ...row, name: "Changed" }]));
+    expect(result.body.data.rows[0].errors[0]).toMatchObject({
+      field: "name",
+      code: "EMPLOYEE_MASTER_MISMATCH",
+    });
+  });
+  it("never reactivates inactive employees; replay skips but new dates reject", async () => {
+    const row = csvRow();
+    const created = await upload(csv([row]));
+    const id = created.body.data.rows[0].employeeId;
+    await post(`/employees/${id}/deactivate`, {});
+    expect((await upload(csv([row]))).body.data.counts.skipped).toBe(1);
+    expect(
+      (await upload(csv([{ ...row, effective_date: "2029-01-01" }]))).body.data
+        .rows[0].errors[0].code,
+    ).toBe("EMPLOYEE_INACTIVE");
+    expect(
+      (await owner.employee.findUniqueOrThrow({ where: { id } })).isActive,
+    ).toBe(false);
+  });
+  it("returns exact partial counts, rejects all duplicate codes and retains blank rows", async () => {
+    const duplicate = csvRow();
+    const valid = csvRow();
+    const invalid = csvRow({ annual_base_salary: "-1" });
+    const response = await upload(
+      Buffer.concat([
+        csv([
+          valid,
+          duplicate,
+          {
+            ...duplicate,
+            employee_code: duplicate.employee_code!.toLowerCase(),
+          },
+          invalid,
+        ]),
+        Buffer.from("\n\n"),
+      ]),
+    );
+    expect(response.status).toBe(200);
+    expect(response.body.data.totalRows).toBe(5);
+    expect(response.body.data.counts).toEqual({
+      created: 1,
+      updated: 0,
+      skipped: 0,
+      rejected: 4,
+    });
+    expect(
+      response.body.data.rows.map((r: { rowNumber: number }) => r.rowNumber),
+    ).toEqual([2, 3, 4, 5, 6]);
+    expect(response.body.data.rows[1].errors[0].code).toBe(
+      "DUPLICATE_EMPLOYEE_CODE",
+    );
+  });
+  it.each([
+    { email: "invalid" },
+    { hire_date: "2026-02-30" },
+    { country_code: "ZZ" },
+    { department_code: "UNKNOWN" },
+    { designation_code: "UNKNOWN" },
+    { currency_code: "ZZZ" },
+    { annual_base_salary: "1.001" },
+    { annual_base_salary: "10000000000000" },
+    { effective_date: "2019-12-31" },
+  ])(
+    "rejects invalid row %j without creating an employee",
+    async (overrides) => {
+      const row = csvRow(overrides);
+      const result = await upload(csv([row]));
+      expect(result.status).toBe(200);
+      expect(result.body.data.counts.rejected).toBe(1);
+      expect(
+        await owner.employee.count({
+          where: { employeeCode: row.employee_code },
+        }),
+      ).toBe(0);
+    },
+  );
+  it("rejects department/designation mismatch", async () => {
+    const result = await upload(
+      csv([csvRow({ department_code: `${prefix}HR` })]),
+    );
+    expect(result.body.data.rows[0].errors[0].code).toBe("DEPARTMENT_MISMATCH");
+  });
+  it("allows zero salary, future hire and future revision", async () => {
+    const result = await upload(
+      csv([
+        csvRow({
+          hire_date: "2029-01-01",
+          effective_date: "2029-01-01",
+          annual_base_salary: "0",
+        }),
+      ]),
+    );
+    expect(result.body.data.counts.created).toBe(1);
+  });
+  it("supports retired unchanged references and currency replay but disallows new currency writes", async () => {
+    const row = csvRow();
+    await upload(csv([row]));
+    await owner.country.update({
+      where: { id: countryId },
+      data: { isActive: false },
+    });
+    await owner.currency.update({
+      where: { code: "USD" },
+      data: { isActive: false },
+    });
+    try {
+      expect((await upload(csv([row]))).body.data.counts.skipped).toBe(1);
+      expect(
+        (await upload(csv([{ ...row, effective_date: "2028-01-01" }]))).body
+          .data.rows[0].errors[0].code,
+      ).toBe("UNSUPPORTED_CURRENCY");
+      expect(
+        (await upload(csv([csvRow({ currency_code: "EUR" })]))).body.data.counts
+          .rejected,
+      ).toBe(1);
+    } finally {
+      await owner.country.update({
+        where: { id: countryId },
+        data: { isActive: true },
+      });
+      await owner.currency.update({
+        where: { code: "USD" },
+        data: { isActive: true },
+      });
+    }
+  });
+  it("rolls back new employee creation when salary FK insertion fails", async () => {
+    const row = csvRow();
+    const result = await importRows(runtime, parseCsv(csv([row])), 0);
+    expect(result.counts.rejected).toBe(1);
+    expect(result.rows[0]!.errors![0]!.code).toBe("REFERENCE_CONFLICT");
+    expect(
+      await owner.employee.count({
+        where: { employeeCode: row.employee_code },
+      }),
+    ).toBe(0);
+  });
+  it("reclassifies identical concurrent imports using unique constraints", async () => {
+    const row = csvRow();
+    const results = await Promise.all([upload(csv([row])), upload(csv([row]))]);
+    expect(results.map((r) => r.body.data.rows[0].outcome).sort()).toEqual([
+      "created",
+      "skipped",
+    ]);
+  });
+  it("serializes concurrent same-date revisions for an existing employee", async () => {
+    const row = csvRow();
+    await upload(csv([row]));
+    const next = { ...row, effective_date: "2028-01-01" };
+    const results = await Promise.all([
+      upload(csv([next])),
+      upload(csv([next])),
+    ]);
+    expect(results.map((r) => r.body.data.rows[0].outcome).sort()).toEqual([
+      "skipped",
+      "updated",
+    ]);
+  });
+  it("rejects concurrent conflicting new employees without overwriting winner", async () => {
+    const row = csvRow();
+    const results = await Promise.all([
+      upload(csv([row])),
+      upload(csv([{ ...row, annual_base_salary: "200" }])),
+    ]);
+    expect(results.map((r) => r.body.data.rows[0].outcome).sort()).toEqual([
+      "created",
+      "rejected",
+    ]);
+    const saved = await owner.employee.findUniqueOrThrow({
+      where: { employeeCode: row.employee_code },
+    });
+    expect(
+      await owner.salaryRecord.count({ where: { employeeId: saved.id } }),
+    ).toBe(1);
+  });
+  it("serializes concurrent import against employee deactivation", async () => {
+    const row = csvRow();
+    const created = await upload(csv([row]));
+    const id = created.body.data.rows[0].employeeId;
+    const [revision, deactivated] = await Promise.all([
+      upload(csv([{ ...row, effective_date: "2028-01-01" }])),
+      post(`/employees/${id}/deactivate`, {}),
+    ]);
+    expect(deactivated.status).toBe(200);
+    expect(["updated", "rejected"]).toContain(
+      revision.body.data.rows[0].outcome,
+    );
+    expect(
+      (await upload(csv([{ ...row, effective_date: "2029-01-01" }]))).body.data
+        .rows[0].errors[0].code,
+    ).toBe("EMPLOYEE_INACTIVE");
+  });
+  it.each([
+    ["empty", ""],
+    ["missing header", "employee_code\nEMP1"],
+    ["unknown header", header + ",status\n"],
+    ["duplicate header", header.replace("name", "email") + "\n"],
+    ["malformed quotes", header + '\n"unclosed'],
+  ])("rejects %s as file errors without writes", async (_label, text) => {
+    const before = await owner.employee.count();
+    expect((await upload(Buffer.from(text))).status).toBe(400);
+    expect(await owner.employee.count()).toBe(before);
+  });
+  it("validates complete file before committing an otherwise valid prefix", async () => {
+    const row = csvRow();
+    const response = await upload(
+      Buffer.concat([csv([row]), Buffer.from('\n"unclosed')]),
+    );
+    expect(response.status).toBe(400);
+    expect(
+      await owner.employee.count({
+        where: { employeeCode: row.employee_code },
+      }),
+    ).toBe(0);
+  });
+  it("enforces exact byte and row limits at the HTTP boundary", async () => {
+    const base = csv([csvRow()]).toString();
+    const exact = Buffer.from(
+      base.replace(
+        "CSV Person",
+        "CSV Person" + " ".repeat(MAX_BYTES - Buffer.byteLength(base)),
+      ),
+    );
+    expect((await upload(exact)).status).toBe(200);
+    expect(
+      (await upload(Buffer.concat([exact, Buffer.from(" ")]))).status,
+    ).toBe(413);
+    const rows = Array.from({ length: MAX_ROWS }, () =>
+      csvRow({ annual_base_salary: "bad" }),
+    );
+    const result = await upload(csv(rows));
+    expect(result.status).toBe(200);
+    expect(result.body.data.counts.rejected).toBe(MAX_ROWS);
+    expect((await upload(csv([...rows, csvRow()]))).status).toBe(413);
+  });
+  it("rejects unsupported files, extra parts, missing files and malformed multipart", async () => {
+    expect((await upload(csv([csvRow()]), "data.xlsx")).status).toBe(415);
+    expect(
+      (
+        await upload(csv([csvRow()])).attach(
+          "file",
+          Buffer.from("extra"),
+          "extra.csv",
+        )
+      ).status,
+    ).toBe(400);
+    expect(
+      (await upload(csv([csvRow()])).field("status", "active")).status,
+    ).toBe(400);
+    expect((await post("/imports/employees", {})).status).toBe(415);
+    expect(
+      (
+        await request(app)
+          .post("/api/v1/imports/employees")
+          .set("Cookie", cookie)
+          .set("Origin", origin)
+          .set("X-CSRF-Token", csrf)
+          .set("Content-Type", "multipart/form-data")
+          .send("broken")
+      ).status,
+    ).toBe(400);
+  });
+  it("requires authentication, exact Origin and CSRF before accepting uploads", async () => {
+    expect(
+      (
+        await request(app)
+          .post("/api/v1/imports/employees")
+          .attach("file", csv([csvRow()]), "data.csv")
+      ).status,
+    ).toBe(401);
+    for (const token of ["", "invalid"])
+      expect(
+        (
+          await request(app)
+            .post("/api/v1/imports/employees")
+            .set("Cookie", cookie)
+            .set("Origin", origin)
+            .set("X-CSRF-Token", token)
+            .attach("file", csv([csvRow()]), "data.csv")
+        ).status,
+      ).toBe(403);
+    expect(
+      (
+        await request(app)
+          .post("/api/v1/imports/employees")
+          .set("Cookie", cookie)
+          .set("Origin", "https://untrusted.test")
+          .set("X-CSRF-Token", csrf)
+          .attach("file", csv([csvRow()]), "data.csv")
+      ).status,
+    ).toBe(403);
   });
 });

@@ -159,8 +159,8 @@ export function Login({ next }: { next: string }) {
             </p>
           )}
           <form onSubmit={submit} className="space-y-5">
-            {error != null && <ErrorNotice error={error} />}
-            <Field label="Email address" id="email">
+            {error != null && <ErrorNotice error={error} inlineFields={["email", "password"]} />}
+            <Field error={error} label="Email address" id="email">
               <input
                 id="email"
                 name="email"
@@ -171,7 +171,7 @@ export function Login({ next }: { next: string }) {
                 placeholder="you@company.com"
               />
             </Field>
-            <Field label="Password" id="password">
+            <Field error={error} label="Password" id="password">
               <input
                 id="password"
                 name="password"

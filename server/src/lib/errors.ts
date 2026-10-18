@@ -24,8 +24,17 @@ export const errorHandler: ErrorRequestHandler = (error: unknown, req, res, _nex
     if (error.type === 'entity.parse.failed') failure = new ApiError(400, 'INVALID_JSON', 'Malformed JSON body');
     if (error.type === 'entity.too.large') failure = new ApiError(413, 'BODY_TOO_LARGE', 'Request body exceeds 64 KiB');
   }
-  failure ??= new ApiError(500, 'INTERNAL_ERROR', 'An unexpected error occurred');
+  failure ??= new ApiError(500, 'INTERNAL_ERROR', "We couldn't complete your request. Please try again.");
   if (failure.status === 503) res.setHeader('Retry-After', '1');
+  if (failure.status >= 500) console.error(JSON.stringify({
+    event: 'api_failure', requestId: req.requestId, status: failure.status,
+    route: typeof req.route?.path === 'string' ? req.route.path : 'unmatched',
+    method: ['GET', 'POST', 'PATCH', 'DELETE', 'PUT', 'HEAD', 'OPTIONS'].includes(req.method) ? req.method : 'other',
+    code: failure.code,
+    category: error instanceof Prisma.PrismaClientKnownRequestError ? 'database_request'
+      : error instanceof Prisma.PrismaClientInitializationError ? 'database_connection' : 'application',
+    ...(error instanceof Prisma.PrismaClientKnownRequestError && /^P\d{4}$/.test(error.code) ? { databaseCode: error.code } : {}),
+  }));
   // Never serialize/log the original error: Prisma errors can contain salary inputs.
   res.status(failure.status).json({ error: { code: failure.code, message: failure.message, details: failure.details, requestId: req.requestId } });
 };

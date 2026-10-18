@@ -25,7 +25,8 @@
     "db:seed": "npm run db:seed -w server",
     "bench:analytics": "npm run bench:analytics -w server",
     "test:frontend": "npm run test -w client",
-    "test:browser": "npm run test:browser -w client"
+    "test:browser": "npm run test:browser -w client",
+    "bench:imports": "npm run bench:imports -w server"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

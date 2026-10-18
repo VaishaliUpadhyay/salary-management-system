@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import type { Catalog, Employee, Page, Salary } from "../../lib/types";
 import { api } from "../../lib/api";
 import { useResource } from "../../lib/hooks";
-import { money, salaryError, today } from "../../lib/format";
+import { money, salaryIssue, today } from "../../lib/format";
 import { Button } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
 import {
@@ -37,9 +37,9 @@ export function SalaryHistory({
     const values = new FormData(event.currentTarget);
     const amount = String(values.get("amount")).trim(),
       effectiveDate = String(values.get("effectiveDate"));
-    const invalid = salaryError(amount, effectiveDate, employee.hireDate);
+    const invalid = salaryIssue(amount, effectiveDate, employee.hireDate);
     if (invalid) {
-      setError(new Error(invalid));
+      setError(invalid);
       return;
     }
     setBusy(true);
@@ -168,8 +168,8 @@ export function SalaryHistory({
         description="Salary revisions are permanent. Review the amount, currency and effective date before saving."
       >
         <form onSubmit={submit} className="space-y-5">
-          {error != null && <ErrorNotice error={error} />}
-          <Field label="Annual amount" id="revision-amount">
+          {error != null && <ErrorNotice error={error} inlineFields={["amount", "currencyCode", "effectiveDate"]} />}
+          <Field error={error} label="Annual amount" id="revision-amount">
             <input
               id="revision-amount"
               name="amount"
@@ -178,7 +178,7 @@ export function SalaryHistory({
               maxLength={16}
             />
           </Field>
-          <Field label="Salary currency" id="revision-currency">
+          <Field error={error} label="Salary currency" id="revision-currency">
             <select
               id="revision-currency"
               name="currencyCode"
@@ -195,7 +195,7 @@ export function SalaryHistory({
                 ))}
             </select>
           </Field>
-          <Field
+          <Field error={error}
             label="Effective date"
             id="revision-date"
             hint={`On or after hire date ${employee.hireDate}. Future dates are allowed.`}

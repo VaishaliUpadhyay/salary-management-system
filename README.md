@@ -2,7 +2,7 @@
 
 A compensation-management MVP for one HR Manager, with a deterministic seed of 10,000 synthetic employees across countries, departments and designations. Annual base salary management only; payroll, taxes and payments are outside scope.
 
-**Milestones 1–4 are complete. The user has confirmed Milestone 4 frontend implementation and manual testing are complete.** The HR workspace includes login, employee management, append-only salary history and compensation dashboards. CSV import remains pending for Milestone 5.
+**Milestones 1–4 are complete. The user has confirmed Milestone 4 frontend implementation and manual testing are complete.** The HR workspace includes login, employee management, append-only salary history and compensation dashboards. Milestone 5 CSV import is implemented and awaiting human review.
 
 ## Stack
 
@@ -53,6 +53,7 @@ Open http://localhost:5173 and sign in with the locally configured seeded HR Man
 
 - **Overview:** compensation metrics, salary distribution and country/department/designation breakdowns. Select currency, FX date and organizational filters. Employee counts and current-salary coverage are shown separately; rates are illustrative.
 - **Employees:** server-paginated search/filter, profile details, create/edit and confirmed deactivation. Filters survive navigation back from details.
+- **Import:** upload a UTF-8 CSV up to 5 MiB/10,000 data rows. Existing master fields are never overwritten; identical salary replays skip. Results and downloadable row errors show partial success with readable field labels and actionable messages; diagnostic codes remain in the API/error download. See the [sample and walkthrough](docs/milestone-5.md#manual-walkthrough).
 - **Salary history:** original amounts/currencies, current and future pay, scoped history and append-only revisions. Future revisions are allowed; pre-hire and inactive-employee revisions are rejected. Existing salaries cannot be edited or deleted.
 
 Layouts support desktop/tablet/mobile, with keyboard-accessible dialogs and loading/error/empty states. Production static hosting must keep the UI and `/api` on the same HTTPS origin; `npm run build` produces artifacts but does not deploy them.
@@ -63,6 +64,7 @@ All paths start with `/api/v1`. See [API contracts](docs/api-contracts.md) for p
 
 | Method | Path | Behavior |
 |---|---|---|
+| POST | `/imports/employees` | Authenticated multipart CSV import with row transactions and partial-success results |
 | GET | `/health` | Public health check |
 | GET | `/analytics/compensation` | Current compensation summary, distribution and country/department/designation grouping |
 | GET | `/countries`, `/departments`, `/designations` | Paginated authenticated lookup catalogs; status and designation department filters |
@@ -84,6 +86,8 @@ Runtime connections use `DATABASE_URL`; Prisma migrations use `MIGRATION_DATABAS
 
 ## Validation
 
+**Current Milestone 5 verification: 54 frontend + 92 backend + 116 MySQL integration + 9 Chromium tests passed (271 total).** Lint, typechecks, production builds and Prisma validation passed; npm audit reported zero vulnerabilities. See [Milestone 5 evidence](docs/milestone-5.md). Human Milestone 5 review is pending.
+
 ```bash
 npm test
 npm run test:db
@@ -100,7 +104,7 @@ npm run db:validate
 
 Database tests require the existing isolated schema `salary_management_m1_test_20261015` and both test accounts. They refuse nonempty application tables. API fixtures are committed only in that schema for concurrency tests and cleaned up by their owner; schema/seed test fixtures roll back. Do not run suites concurrently against it. Interrupted runs require inspection, not an automatic reset.
 
-The original seed contains **10,000 employees and 30,700 salary records**. Subsequent human manual testing added **2 employees and 3 salary records**. Milestone 3 read-only checks confirmed **10,002 employees and 30,703 salary records**. The latest read-only check on 2026-10-18 found **10,002 employees and 30,704 salary records**; no development records were changed during pre-commit validation. Frontend component and Chromium UI tests are implemented; CSV tests and live full-stack browser mutation tests remain pending. Analytics/conversion tests and a repeatable API latency benchmark are implemented. Exchange rates are illustrative, not live market data.
+The original seed contains **10,000 employees and 30,700 salary records**. Subsequent human manual testing added **2 employees and 3 salary records**. Milestone 3 read-only checks confirmed **10,002 employees and 30,703 salary records**. The latest read-only check on 2026-10-18 found **10,002 employees and 30,704 salary records**; no development records were changed during pre-commit validation. Frontend, CSV and Chromium UI tests are implemented; live full-stack browser mutation automation remains pending. Analytics/conversion tests and a repeatable API latency benchmark are implemented. Exchange rates are illustrative, not live market data.
 
 Optional read-only database verification:
 
@@ -108,6 +112,24 @@ Optional read-only database verification:
 npm exec -w server -- tsx prisma/operations/verify-runtime.ts
 npm run db:status
 ```
+
+## CSV import
+
+Use multipart field `file` on `POST /api/v1/imports/employees` with the session cookie, allowed Origin and `X-CSRF-Token`. Required headers (arbitrary order):
+
+```csv
+employee_code,name,email,country_code,department_code,designation_code,hire_date,annual_base_salary,currency_code,effective_date
+```
+
+No status column or master auto-creation. New employees are active; existing masters must match. All duplicate codes in one file reject. New effective dates append salary; identical records skip; conflicts reject. UTF-8/BOM/quoted fields and LF/CRLF are supported. Malformed files fail before writes. HTTP 200 includes `{data:{totalRows,counts:{created,updated,skipped,rejected},rows}}`; interrupted processing may return 503 with completed progress and `processingIncomplete:true` in `data`.
+
+```bash
+# Empty isolated TEST_DATABASE_NAME only; removes only harness-owned fixtures.
+# Do not run concurrently with test:db.
+npm run bench:imports
+```
+
+Measured local create/replay times: 100 rows 0.39/0.30 s; 1,000 rows 3.42/2.00 s; 10,000 rows 29.96/18.45 s. A timeout may occur after rows commit; inspect records before deliberate reimport. No background jobs or automatic mutation retries. See [Milestone 5](docs/milestone-5.md) for exact evidence, error format, limits, sample and remaining validation boundaries.
 
 ## Analytics and performance
 
@@ -126,6 +148,10 @@ The benchmark verifies employee/salary/FX hashes before and after. It creates an
 
 ## Documentation
 
-[Requirements](docs/requirements.md) · [Architecture](docs/architecture.md) · [Database design](docs/database-design.md) · [API contracts](docs/api-contracts.md) · [Decisions](docs/decisions.md) · [Milestone 1](docs/milestone-1.md) · [Milestone 2](docs/milestone-2.md) · [Milestone 3](docs/milestone-3.md) · [Milestone 4](docs/milestone-4.md) · [AI usage](docs/ai-usage.md)
+[Requirements](docs/requirements.md) · [Architecture](docs/architecture.md) · [Database design](docs/database-design.md) · [API contracts](docs/api-contracts.md) · [Decisions](docs/decisions.md) · [Milestone 1](docs/milestone-1.md) · [Milestone 2](docs/milestone-2.md) · [Milestone 3](docs/milestone-3.md) · [Milestone 4](docs/milestone-4.md) · [Milestone 5](docs/milestone-5.md) · [AI usage](docs/ai-usage.md)
 
 No deployment has been completed. Production proxy/TLS configuration, production load validation and the remaining product features are pending.
+
+Error handling uses shared, code-based user guidance with compact, accessible field errors and no user-facing technical references. CSV errors retain row numbers, while salary ranges are checked before submission. See [the error-handling audit](docs/error-handling-audit.md) for implementation details and actual validation results.
+
+Milestone 6 presentation corrections and viewport verification are recorded in [the error UI regression report](docs/error-ui-regressions.md).

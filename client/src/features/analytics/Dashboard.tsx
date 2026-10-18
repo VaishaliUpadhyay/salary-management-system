@@ -11,7 +11,7 @@ import {
 import { Users, Wallet, ArrowUpRight } from "lucide-react";
 import type { Catalog, Report, Single } from "../../lib/types";
 import { useResource, navigate, queryString } from "../../lib/hooks";
-import { money, today } from "../../lib/format";
+import { money, today, boundaryIssue } from "../../lib/format";
 import { ErrorNotice, Loading, Empty, Field } from "../../components/common";
 import { OrganizationFilters } from "../../components/OrganizationFilters";
 import { Button } from "../../components/ui/button";
@@ -26,6 +26,7 @@ export function Dashboard({
     currency = values.get("reportingCurrency") || "USD",
     group = values.get("groupBy") || "country";
   const [retry, setRetry] = useState(0);
+  const [boundaryError, setBoundaryError] = useState<unknown>(null);
   const query = queryString({
     reportingCurrency: currency,
     reportingDate: values.get("reportingDate") || undefined,
@@ -63,7 +64,7 @@ export function Dashboard({
         </span>
       </header>
       <section className="panel filter-grid" aria-label="Analytics filters">
-        <Field label="Reporting currency" id="reporting-currency">
+        <Field error={result.error} field="reportingCurrency" label="Reporting currency" id="reporting-currency">
           <select
             id="reporting-currency"
             value={currency}
@@ -78,7 +79,7 @@ export function Dashboard({
               ))}
           </select>
         </Field>
-        <Field label="FX reporting date" id="reporting-date">
+        <Field error={result.error} field="reportingDate" label="FX reporting date" id="reporting-date">
           <input
             id="reporting-date"
             type="date"
@@ -89,6 +90,7 @@ export function Dashboard({
           />
         </Field>
         <OrganizationFilters
+          error={result.error}
           catalog={catalog}
           values={values}
           change={change}
@@ -107,13 +109,15 @@ export function Dashboard({
           className="bucket-form"
           onSubmit={(e) => {
             e.preventDefault();
-            change(
-              "bucketBoundaries",
-              String(new FormData(e.currentTarget).get("buckets")),
-            );
+            const value = String(new FormData(e.currentTarget).get("buckets"));
+            const issue = boundaryIssue(value);
+            setBoundaryError(issue);
+            if (!issue) change("bucketBoundaries", value);
           }}
         >
           <Field
+            error={boundaryError ?? result.error}
+            field="bucketBoundaries"
             label="Distribution boundaries"
             id="buckets"
             hint="Comma-separated amounts starting at 0; up to 20 increasing values."
@@ -141,6 +145,7 @@ export function Dashboard({
       ) : result.error ? (
         <ErrorNotice
           error={result.error}
+          inlineFields={["bucketBoundaries", "reportingCurrency", "reportingDate", "countryId", "departmentId", "designationId"]}
           retry={() => setRetry((r) => r + 1)}
         />
       ) : (

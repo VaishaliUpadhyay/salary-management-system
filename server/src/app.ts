@@ -1,3 +1,4 @@
+import { importRoutes } from "./modules/imports/routes.js";
 import express from "express";
 import { masterDataRoutes } from "./modules/master-data/routes.js";
 import { randomUUID } from "node:crypto";
@@ -46,7 +47,18 @@ export function createApp({
     auth.mutations,
     employeeRoutes(db),
   );
-  app.use("/api/v1", auth.requireSession, masterDataRoutes(db), analyticsRoutes(db));
+  app.use(
+    "/api/v1/imports",
+    auth.requireSession,
+    auth.mutationSecurity,
+    importRoutes(db),
+  );
+  app.use(
+    "/api/v1",
+    auth.requireSession,
+    masterDataRoutes(db),
+    analyticsRoutes(db),
+  );
   app.use(() => {
     throw new ApiError(404, "NOT_FOUND", "Route not found");
   });

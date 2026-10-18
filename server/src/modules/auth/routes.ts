@@ -93,16 +93,23 @@ export function authModule(
     }
     next();
   };
-  const mutations: RequestHandler = (req, res, next) => {
+  const mutationSecurity: RequestHandler = (req, res, next) => {
     if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
     originCheck(req, res, (error) => {
       if (error) return next(error);
       csrfCheck(req, res, (error) => {
         if (error) return next(error);
-        jsonOnly(req, res, next);
+        next();
       });
     });
   };
+
+  const mutations: RequestHandler = (req, res, next) =>
+    mutationSecurity(req, res, (error) => {
+      if (error) return next(error);
+      if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
+      jsonOnly(req, res, next);
+    });
 
   router.post("/login", originCheck, jsonOnly, async (req, res) => {
     const input = parse(loginBody, req.body);
@@ -181,5 +188,5 @@ export function authModule(
       })
       .catch(next);
   });
-  return { router, requireSession, mutations };
+  return { router, requireSession, mutations, mutationSecurity };
 }

@@ -152,7 +152,7 @@ describe("authentication and session UI", () => {
     await user.type(screen.getByLabelText("Password"), "incorrect");
     await user.click(screen.getByRole("button", { name: "Sign in" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "INVALID_CREDENTIALS",
+      "Invalid email or password",
     );
     expect(screen.getByLabelText("Password")).toHaveValue("");
   });
@@ -189,7 +189,7 @@ describe("authentication and session UI", () => {
         : undefined;
     render(<App />);
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "DATABASE_UNAVAILABLE",
+      "temporarily unavailable",
     );
     expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
   });
@@ -376,7 +376,7 @@ describe("employee and salary flows", () => {
       screen.getByRole("button", { name: "Save salary revision" }),
     );
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "SALARY_DATE_CONFLICT",
+      "A salary revision already exists",
     );
     expect(screen.getByRole("dialog")).toBeVisible();
   });
@@ -437,7 +437,7 @@ describe("recovery and empty states", () => {
         : undefined;
     await openDirectory();
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "DATABASE_UNAVAILABLE",
+      "temporarily unavailable",
     );
     override = () => undefined;
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));

@@ -1,8 +1,10 @@
+import { ImportPage } from "./features/imports/ImportPage";
 import { useEffect, useState, lazy, Suspense } from "react";
 import {
   Landmark,
   LayoutDashboard,
   Users,
+  Upload,
   LogOut,
   ShieldCheck,
 } from "lucide-react";
@@ -46,7 +48,7 @@ function Workspace({ route }: { route: string }) {
   }, [retry]);
   useEffect(() => {
     document.getElementById("main-content")?.focus();
-    document.title = `${path?.startsWith("/employees") ? "Employees" : "Compensation"} · PeopleLedger`;
+    document.title = `${path === "/imports" ? "CSV Import" : path?.startsWith("/employees") ? "Employees" : "Compensation"} · PeopleLedger`;
   }, [path]);
   const detail = /^\/employees\/([1-9]\d*)$/.exec(path ?? "");
   return (
@@ -81,6 +83,13 @@ function Workspace({ route }: { route: string }) {
           >
             <Users size={19} />
             Employees
+          </a>
+          <a
+            href="#/imports"
+            aria-current={path === "/imports" ? "page" : undefined}
+          >
+            <Upload size={19} />
+            Import
           </a>
         </nav>
         <div className="sidebar-note">
@@ -133,6 +142,8 @@ function Workspace({ route }: { route: string }) {
                 <Dashboard catalog={catalog} search={search} />
               ) : path === "/employees" ? (
                 <Employees catalog={catalog} search={search} />
+              ) : path === "/imports" ? (
+                <ImportPage />
               ) : detail ? (
                 <EmployeeDetail
                   key={detail[1]}
@@ -164,7 +175,7 @@ function Router() {
   const loginRoute = route.split("?")[0] === "/login";
   const requested =
     new URLSearchParams(route.split("?")[1]).get("next") || "/dashboard";
-  const next = /^\/(dashboard|employees)([/?]|$)/.test(requested)
+  const next = /^\/(dashboard|employees|imports)([/?]|$)/.test(requested)
     ? requested
     : "/dashboard";
   useEffect(() => {

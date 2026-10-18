@@ -1,10 +1,11 @@
+import { validationMessage } from './validation-messages.js';
 import { z } from 'zod';
 import { ApiError } from './errors.js';
 
 export function parse<T extends z.ZodType>(schema: T, value: unknown, status = 422): z.output<T> {
   const result = schema.safeParse(value);
-  if (!result.success) throw new ApiError(status, 'VALIDATION_ERROR', 'Request validation failed',
-    result.error.issues.map(issue => ({ field: issue.path.join('.'), code: issue.code, message: issue.message })));
+  if (!result.success) throw new ApiError(status, 'VALIDATION_ERROR', 'Please check the information you entered.',
+    result.error.issues.map(issue => ({ field: issue.path.join('.'), code: issue.code, message: validationMessage(issue) })));
   return result.data;
 }
 export const id = z.number().int().positive().max(4294967295);

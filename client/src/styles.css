@@ -511,6 +511,9 @@ td:nth-child(n + 2) {
   font-size: 0.88rem;
 }
 .error-box {
+  min-width: 0;
+  max-width: 100%;
+  line-height: 1.5;
   display: flex;
   align-items: flex-start;
   gap: 12px;
@@ -518,8 +521,8 @@ td:nth-child(n + 2) {
   background: #fff5f2;
   color: #8b3328;
   border-radius: 9px;
-  padding: 18px;
-  margin: 16px 0;
+  padding: 10px 12px;
+  margin: 10px 0;
   font-size: 0.82rem;
   overflow-wrap: anywhere;
 }
@@ -874,3 +877,20 @@ footer {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Compact error guidance stays inside its existing form/report layout. */
+.error-content { min-width: 0; flex: 1; }
+.error-content strong { display: block; font-weight: 500; }
+.error-content button { display: flex; width: fit-content; max-width: 100%; }
+.field-label { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.field-label span { font-size: 0.65rem; }
+.field-error { color: #8b3328; overflow-wrap: anywhere; }
+.field small { max-width: 100%; overflow-wrap: anywhere; }
+.bucket-form { flex-wrap: wrap; }
+.bucket-form .field { min-width: 0; }
+.import-errors { table-layout: fixed; min-width: 0; }
+.import-errors th, .import-errors td { padding: 12px 6px; white-space: normal; overflow-wrap: anywhere; vertical-align: top; }
+.import-errors th:first-child { width: 36px; }
+.import-errors th:nth-child(2) { width: 22%; }
+.import-errors th:nth-child(3) { width: 72px; }
+.import-errors p + p { margin-top: 6px; }

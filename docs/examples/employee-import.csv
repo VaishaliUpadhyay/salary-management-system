@@ -1,0 +1,4 @@
+employee_code,name,email,country_code,department_code,designation_code,hire_date,annual_base_salary,currency_code,effective_date
+M5DEMO001,Alex Sample,alex.sample@example.test,US,ENG,ENG_1,2024-01-01,75000.00,USD,2024-01-01
+M5DEMO002,"Taylor, Sample",taylor.sample@example.test,US,ENG,ENG_1,2029-01-01,0.00,EUR,2029-01-01
+M5DEMO003,Jordan Sample,jordan.sample@example.test,US,ENG,ENG_1,2024-01-01,80000.00,USD,2023-12-31

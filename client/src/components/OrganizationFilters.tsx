@@ -4,7 +4,9 @@ export function OrganizationFilters({
   catalog,
   values,
   change,
+  error,
 }: {
+  error?: unknown;
   catalog: Catalog;
   values: URLSearchParams;
   change: (key: string, value: string) => void;
@@ -25,7 +27,7 @@ export function OrganizationFilters({
   return (
     <>
       {fields.map(({ key, label, rows }) => (
-        <Field key={key} label={label} id={`filter-${key}`}>
+        <Field error={error} field={key} key={key} label={label} id={`filter-${key}`}>
           <select
             id={`filter-${key}`}
             value={values.get(key) ?? ""}

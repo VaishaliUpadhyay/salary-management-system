@@ -71,7 +71,7 @@ export function Employees({
             change("q", String(new FormData(e.currentTarget).get("q")).trim());
           }}
         >
-          <Field label="Search employees" id="search">
+          <Field error={result.error} label="Search employees" id="search">
             <input
               id="search"
               name="q"
@@ -86,11 +86,12 @@ export function Employees({
           </Button>
         </form>
         <OrganizationFilters
+          error={result.error}
           catalog={catalog}
           values={values}
           change={change}
         />
-        <Field label="Employee status" id="status">
+        <Field error={result.error} label="Employee status" id="status">
           <select
             id="status"
             value={values.get("status") || "active"}
@@ -101,7 +102,7 @@ export function Employees({
             <option value="all">All employees</option>
           </select>
         </Field>
-        <Field label="Sort by" id="sort">
+        <Field error={result.error} label="Sort by" id="sort">
           <select
             id="sort"
             value={values.get("sort") || "employeeCode"}
@@ -122,6 +123,7 @@ export function Employees({
         ) : result.error ? (
           <ErrorNotice
             error={result.error}
+            inlineFields={["q", "status", "sort", "countryId", "departmentId", "designationId"]}
             retry={() => setRetry((r) => r + 1)}
           />
         ) : (
