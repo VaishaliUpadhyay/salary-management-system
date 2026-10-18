@@ -4,6 +4,8 @@ Approved by the user for Milestone 1 on 2026-10-15. The design-stage description
 
 Technical design only, 2026-10-15. Product authority: [requirements](requirements.md), then [AGENTS.md](../AGENTS.md). No migrations or application schema have been created. The assessment was read from `docs/assessment/assessment.docx`; it introduces no conflicting requirements.
 
+**Current status:** Milestones 1–5 are implemented and user-confirmed complete. The design-stage wording below is historical; use [Milestone 6](milestone-6.md) for executed checks and outstanding delivery gaps, and [setup](setup.md) for fresh local installation. The approved Prisma range-check decision in [decisions](decisions.md) supersedes direct SELECT-warning inspection. The checked-in Prisma schema and initial migration are implemented; no schema changes were made during final QA.
+
 ## Conventions
 
 Use MySQL 8.x InnoDB, minimum 8.0.16 for enforced CHECK constraints. Pin the exact supported MySQL and Prisma versions during implementation. All columns are NOT NULL unless marked `?`. IDs are unsigned auto-increment INTs; expose them as JSON numbers. Employee business identifiers are separate immutable `employeeCode` strings. Table/column names are snake_case through Prisma `@@map`/`@map`.

@@ -2,6 +2,8 @@
 
 Approved by the user for Milestone 1 on 2026-10-15. The design-stage descriptions below are preserved; implementation evidence and remaining live checks are tracked in [milestone-1.md](milestone-1.md).
 
+**Current status:** Milestones 1–5 are implemented and user-confirmed complete. The design-stage wording below is historical; use [Milestone 6](milestone-6.md) for executed checks and outstanding delivery gaps, and [setup](setup.md) for fresh local installation. The approved Prisma range-check decision in [decisions](decisions.md) supersedes direct SELECT-warning inspection. The API currently runs separately from Vite; serving built assets on a production HTTPS origin has not been implemented or deployed.
+
 ## Scope and deployment shape
 
 A modular monolith serves one HR Manager and 10,000 synthetic employees. Keep the selected stack: React, TypeScript, Vite, Tailwind CSS, shadcn/ui and Recharts; Node.js, Express and TypeScript; Zod; Prisma; MySQL 8.x; Vitest and Supertest. No application scaffolding, dependency installation or deployment is part of this design milestone.

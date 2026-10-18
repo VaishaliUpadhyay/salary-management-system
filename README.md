@@ -2,7 +2,7 @@
 
 A compensation-management MVP for one HR Manager, with a deterministic seed of 10,000 synthetic employees across countries, departments and designations. Annual base salary management only; payroll, taxes and payments are outside scope.
 
-**Milestones 1–4 are complete. The user has confirmed Milestone 4 frontend implementation and manual testing are complete.** The HR workspace includes login, employee management, append-only salary history and compensation dashboards. Milestone 5 CSV import is implemented and awaiting human review.
+**Milestones 1–5 are complete and human manual testing is confirmed. Final QA: NEEDS ATTENTION.** All 321 automated tests and build checks pass. Unfiltered analytics misses the latency target on the current 21,114-employee dataset; deployment/video evidence and the master-data contract scope decision remain outstanding. See [Milestone 6](docs/milestone-6.md).
 
 ## Stack
 
@@ -10,9 +10,11 @@ React 19, TypeScript, Vite 8, Tailwind CSS 4, shadcn/ui and Recharts; Node.js 24
 
 ## Local setup
 
-Prerequisites: Node.js 24, npm 11 and MySQL 8.x. A new installation needs separate, migrated development and test schemas.
+Prerequisites: Node.js 24.15+ within 24.x (validated/pinned: 24.20.0), npm 11 (validated: 11.19.0) and MySQL 8.x. Follow the [fresh setup guide](docs/setup.md) for schema creation, both migrations and restricted account provisioning. A new installation needs separate development and test schemas.
 
 ```bash
+nvm install # optional if Node 24.20.0 is already installed
+nvm use
 npm ci
 cp -n server/.env.example server/.env
 # Configure local credentials and environment variables before continuing.
@@ -39,7 +41,7 @@ npm run db:seed
 
 Seeding refuses populated application tables. Do not reseed or reset the existing development database. Keep `.env` and credentials out of Git.
 
-Review and apply `server/prisma/operations/runtime-role.sql` as an administrator. Provision a fresh login, grant its scoped role and set the default role, with no additional broad privileges. Provision an equivalent role scoped only to the test schema. The local Docker provisioning helper has already run; it refuses existing accounts and is not a password-rotation tool. See [Milestone 2 evidence](docs/milestone-2.md) for details.
+Review and apply `server/prisma/operations/runtime-role.sql` as an administrator. Provision a fresh login, grant its scoped role and set the default role, with no additional broad privileges. Provision an equivalent role scoped only to the test schema. The [setup guide](docs/setup.md) includes the explicit test migration and role/login steps; the Docker provisioning helper is optional and refuses existing accounts.
 
 ```bash
 npm run dev
@@ -86,8 +88,7 @@ Runtime connections use `DATABASE_URL`; Prisma migrations use `MIGRATION_DATABAS
 
 ## Validation
 
-**Current Milestone 5 verification: 54 frontend + 92 backend + 116 MySQL integration + 9 Chromium tests passed (271 total).** Lint, typechecks, production builds and Prisma validation passed; npm audit reported zero vulnerabilities. See [Milestone 5 evidence](docs/milestone-5.md). Human Milestone 5 review is pending.
-
+**Final QA: 93 frontend + 97 backend + 116 MySQL integration + 15 Chromium tests passed (321 total), zero failures/skips.** Lint, typechecks, production builds, Prisma validation and migration status passed (all exit 0). `npm audit` reported zero vulnerabilities. A separate clean installation also passed generation, checks, builds and 190 non-database tests. See [actual commands, evidence and limits](docs/milestone-6.md).
 ```bash
 npm test
 npm run test:db
@@ -100,11 +101,11 @@ npm run build
 npm run db:validate
 ```
 
-**Milestone 4 validation: 32 frontend + 32 backend + 86 database + 6 Chromium tests passed (156 total), with lint, TypeScript, builds and Prisma validation passing.** Exact commands/results are recorded in [Milestone 4](docs/milestone-4.md). `npm test` runs frontend component/unit tests and backend tests; `npm run test:frontend` runs only the frontend. Browser tests start Vite on port 5174, use mocked APIs and never change development records. Database integration tests exercise real backend APIs in the isolated schema. The 2026-10-18 pre-commit rerun passed all 156 tests and checks (exit 0); human frontend manual testing is complete.
+`npm test` runs frontend component/unit and backend tests. Browser tests start Vite on port 5174 with mocked APIs; real API integration uses the isolated MySQL schema. Human manual testing is reported separately. Full live browser-to-MySQL automation remains pending.
 
 Database tests require the existing isolated schema `salary_management_m1_test_20261015` and both test accounts. They refuse nonempty application tables. API fixtures are committed only in that schema for concurrency tests and cleaned up by their owner; schema/seed test fixtures roll back. Do not run suites concurrently against it. Interrupted runs require inspection, not an automatic reset.
 
-The original seed contains **10,000 employees and 30,700 salary records**. Subsequent human manual testing added **2 employees and 3 salary records**. Milestone 3 read-only checks confirmed **10,002 employees and 30,703 salary records**. The latest read-only check on 2026-10-18 found **10,002 employees and 30,704 salary records**; no development records were changed during pre-commit validation. Frontend, CSV and Chromium UI tests are implemented; live full-stack browser mutation automation remains pending. Analytics/conversion tests and a repeatable API latency benchmark are implemented. Exchange rates are illustrative, not live market data.
+The deterministic seed creates **10,000 employees and 30,700 salary records**. Subsequent manual/CSV testing increased the existing development dataset to **21,114 employees and 41,816 salary records**. Final QA preserved it; the separately proposed cleanup remains unapproved and unexecuted. Exchange rates are illustrative, not live market data.
 
 Optional read-only database verification:
 
@@ -129,7 +130,7 @@ No status column or master auto-creation. New employees are active; existing mas
 npm run bench:imports
 ```
 
-Measured local create/replay times: 100 rows 0.39/0.30 s; 1,000 rows 3.42/2.00 s; 10,000 rows 29.96/18.45 s. A timeout may occur after rows commit; inspect records before deliberate reimport. No background jobs or automatic mutation retries. See [Milestone 5](docs/milestone-5.md) for exact evidence, error format, limits, sample and remaining validation boundaries.
+Latest local create/replay times: 100 rows 0.512/0.283 s; 1,000 rows 5.431/2.017 s; 10,000 rows 36.945/22.333 s. Sampled process peak RSS across cases was 269.92 MiB (includes harness/API, excludes MySQL). See [Milestone 6 measurements](docs/milestone-6.md). A timeout may occur after rows commit; inspect records before deliberate reimport. No background jobs or automatic mutation retries. See [Milestone 5](docs/milestone-5.md) for exact evidence, error format, limits, sample and remaining validation boundaries.
 
 ## Analytics and performance
 
@@ -139,18 +140,18 @@ Conversion preserves original values and uses USD-reference DECIMAL arithmetic, 
 
 ```bash
 # Existing development data only; 1,000 requests/case at concurrency 10.
-PERF_DATABASE_NAME=salary_management_dev npm run bench:analytics
+PERF_DATABASE_NAME=salary_management_dev PERF_OUTPUT_FILE=../../docs/performance/local-analytics.json npm run bench:analytics
 # Optional read-only execution-plan inspection.
 npm exec -w server -- tsx benchmarks/plan.ts
 ```
 
-The benchmark verifies employee/salary/FX hashes before and after. It creates and removes only its own temporary authentication session; it never seeds or edits employee/salary records. Results and environment details are recorded in [Milestone 3](docs/milestone-3.md). Final analytics p95 ranged from 31.68 to 500.02 ms; designation grouping narrowly missed the strict under-500-ms target. Local measurements are not a production capacity guarantee.
+The benchmark verifies employee/salary/FX hashes before and after. It creates and removes only its own temporary authentication session; it never seeds or edits employee/salary records. Latest [Milestone 6 measurements](docs/milestone-6.md) use 21,114 employees, 1,000 requests per case and concurrency 10: unfiltered analytics p95 **999.15–1,453.67 ms** fails the strict <500 ms target; filtered analytics and employee lists pass. No request failures occurred. This is a local workload measurement, not a production capacity guarantee.
 
 ## Documentation
 
-[Requirements](docs/requirements.md) · [Architecture](docs/architecture.md) · [Database design](docs/database-design.md) · [API contracts](docs/api-contracts.md) · [Decisions](docs/decisions.md) · [Milestone 1](docs/milestone-1.md) · [Milestone 2](docs/milestone-2.md) · [Milestone 3](docs/milestone-3.md) · [Milestone 4](docs/milestone-4.md) · [Milestone 5](docs/milestone-5.md) · [AI usage](docs/ai-usage.md)
+[Requirements](docs/requirements.md) · [Architecture](docs/architecture.md) · [Database design](docs/database-design.md) · [API contracts](docs/api-contracts.md) · [Decisions](docs/decisions.md) · [Milestone 1](docs/milestone-1.md) · [Milestone 2](docs/milestone-2.md) · [Milestone 3](docs/milestone-3.md) · [Milestone 4](docs/milestone-4.md) · [Milestone 5](docs/milestone-5.md) · [Milestone 6](docs/milestone-6.md) · [Fresh setup](docs/setup.md) · [AI usage](docs/ai-usage.md)
 
-No deployment has been completed. Production proxy/TLS configuration, production load validation and the remaining product features are pending.
+No deployment or demo-video evidence is recorded. Production same-origin hosting, proxy/TLS/UI CSP and load validation are pending. Only the three master-data GET lists are implemented; planned master write/detail routes need a scope decision, not an assumption that they exist.
 
 Error handling uses shared, code-based user guidance with compact, accessible field errors and no user-facing technical references. CSV errors retain row numbers, while salary ranges are checked before submission. See [the error-handling audit](docs/error-handling-audit.md) for implementation details and actual validation results.
 

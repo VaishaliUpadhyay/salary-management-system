@@ -1,0 +1,122 @@
+{
+  "recordedAtUtc": "2026-10-18T15:22:21.421080+00:00",
+  "command": "npm run bench:imports",
+  "exitCode": 0,
+  "records": [
+    {
+      "environment": {
+        "node": "v24.20.0",
+        "mysql": "8.0.46",
+        "platform": "darwin",
+        "arch": "arm64",
+        "cpu": "Apple M1",
+        "logicalCpus": 8,
+        "memoryGiB": 8,
+        "database": "isolated local Docker MySQL",
+        "concurrency": 1
+      },
+      "measurement": "Full multipart HTTP response via Supertest, includes parsing/transactions/JSON. RSS samples every 10ms include harness and API, not MySQL."
+    },
+    {
+      "rows": 100,
+      "mode": "create",
+      "httpStatus": 200,
+      "milliseconds": 511.61,
+      "counts": {
+        "created": 100,
+        "updated": 0,
+        "skipped": 0,
+        "rejected": 0
+      },
+      "sqlStatements": 806,
+      "baselineRssMiB": 229.64,
+      "peakRssMiB": 253.3,
+      "fileBytes": 13968
+    },
+    {
+      "rows": 100,
+      "mode": "replay",
+      "httpStatus": 200,
+      "milliseconds": 283.11,
+      "counts": {
+        "created": 0,
+        "updated": 0,
+        "skipped": 100,
+        "rejected": 0
+      },
+      "sqlStatements": 706,
+      "baselineRssMiB": 252.92,
+      "peakRssMiB": 258.63,
+      "fileBytes": 13968
+    },
+    {
+      "rows": 1000,
+      "mode": "create",
+      "httpStatus": 200,
+      "milliseconds": 5430.91,
+      "counts": {
+        "created": 1000,
+        "updated": 0,
+        "skipped": 0,
+        "rejected": 0
+      },
+      "sqlStatements": 8006,
+      "baselineRssMiB": 258.91,
+      "peakRssMiB": 269.92,
+      "fileBytes": 141544
+    },
+    {
+      "rows": 1000,
+      "mode": "replay",
+      "httpStatus": 200,
+      "milliseconds": 2016.8,
+      "counts": {
+        "created": 0,
+        "updated": 0,
+        "skipped": 1000,
+        "rejected": 0
+      },
+      "sqlStatements": 7006,
+      "baselineRssMiB": 111.41,
+      "peakRssMiB": 191.73,
+      "fileBytes": 141544
+    },
+    {
+      "rows": 10000,
+      "mode": "create",
+      "httpStatus": 200,
+      "milliseconds": 36944.76,
+      "counts": {
+        "created": 10000,
+        "updated": 0,
+        "skipped": 0,
+        "rejected": 0
+      },
+      "sqlStatements": 80009,
+      "baselineRssMiB": 193.33,
+      "peakRssMiB": 229.73,
+      "fileBytes": 1444268
+    },
+    {
+      "rows": 10000,
+      "mode": "replay",
+      "httpStatus": 200,
+      "milliseconds": 22332.98,
+      "counts": {
+        "created": 0,
+        "updated": 0,
+        "skipped": 10000,
+        "rejected": 0
+      },
+      "sqlStatements": 70010,
+      "baselineRssMiB": 200.56,
+      "peakRssMiB": 245.78,
+      "fileBytes": 1444268
+    },
+    {
+      "verifiedEmployees": 11100,
+      "verifiedSalaries": 11100
+    }
+  ],
+  "cleanupVerified": true
+}

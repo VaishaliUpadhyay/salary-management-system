@@ -83,7 +83,7 @@ try {
   const [database] = await db.$queryRaw`SELECT VERSION() version, @@session.div_precision_increment divisionPrecision, @@sql_mode sqlMode` as { version: string }[];
   const unchanged = before === await snapshot();
   const evidence = { measuredAtUtc: new Date().toISOString(), node: process.version, platform: platform(), arch: arch(), cpu: cpus()[0]?.model, logicalCpus: cpus().length, hostMemoryGiB: Number((totalmem() / 2 ** 30).toFixed(2)), database, employees, salaries, warmupRequests: 20, workforceSalaryRatesUnchanged: unchanged, results, plan };
-  await writeFile(new URL('../../docs/milestone-3-performance.json', import.meta.url), JSON.stringify(evidence, (_, value: unknown) => typeof value === 'bigint' ? value.toString() : value, 2) + '\n');
+  await writeFile(new URL(process.env.PERF_OUTPUT_FILE ?? '../../docs/milestone-3-performance.json', import.meta.url), JSON.stringify(evidence, (_, value: unknown) => typeof value === 'bigint' ? value.toString() : value, 2) + '\n');
   console.log('Preservation check:', unchanged ? 'PASS' : 'FAIL');
   if (!unchanged || results.some(r => r.errors || r.coldStatus !== 200)) process.exitCode = 1;
 } catch (error) {

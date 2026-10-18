@@ -4,6 +4,10 @@ Approved by the user for Milestone 1 on 2026-10-15. The design-stage description
 
 Base path `/api/v1`. JSON except multipart CSV. See [database design](database-design.md) for types and calculation rules and [architecture](architecture.md) for boundaries. All routes require an authenticated HR session except login and a minimal health endpoint. No application code is included here.
 
+## Current implementation status — Milestone 6
+
+Authentication, employee/salary, analytics, currency/rate and CSV routes below are implemented. Master-data administration is **partial**: only authenticated paginated `GET /countries`, `GET /departments` and `GET /designations` are implemented. The master POST/PATCH and individual GET contracts remain planned, not available routes. Milestone 4 explicitly authorized only the three list endpoints; this audit does not expand that authorization. See [Milestone 6](milestone-6.md) for current verification and submission gaps. The design contracts below remain unchanged.
+
 ## Shared conventions
 
 - JSON camelCase; integer database IDs; immutable uppercase employeeCode is the external employee identifier. Currency/country/master codes normalize to uppercase. Unknown body/query fields are rejected to catch typos.
