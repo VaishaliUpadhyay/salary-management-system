@@ -153,9 +153,11 @@ server/dist
 client/dist
 .DS_Store
 server/.env
+.env.aiven
 # Browser test artifacts
 playwright-report/
 test-results/
 
 # Private database cleanup manifests and backups
 .local-db-cleanup/
+server/prisma/aiven-ca.pem

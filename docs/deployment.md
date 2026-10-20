@@ -57,6 +57,14 @@ For native MySQL operator checks use `--ssl-mode=VERIFY_IDENTITY --ssl-ca=/absol
 
 Start with `connection_limit=5` per application instance; leave capacity for migrations, maintenance and overlapping deploys. Measure and adjust against the service's actual limits; this is a conservative initial configuration, not a proven throughput setting.
 
+### macOS P1011 despite a successful OpenSSL handshake
+
+An observed Aiven server certificate passed OpenSSL chain/hostname validation but omitted the `serverAuth` Extended Key Usage extension. macOS SSL-policy validation rejected it with `Invalid Extended Key Usage for policy`; Prisma 6.19.3's native macOS connector consequently rejected it even with the correct absolute CA path. This is platform certificate-policy incompatibility, not evidence that `sslcert` is the wrong parameter.
+
+Keep `sslcert` pointing to the Aiven project CA and `sslaccept=strict`. The same pinned CLI was verified on Linux: the correct CA reached pending-migration status, while an unrelated CA failed with P1011. Run operator commands there with the native OpenSSL backend (also the planned Render environment), retaining CA and hostname validation. For native macOS use, ask Aiven for a server certificate compatible with Apple's SSL policy, including serverAuth EKU. Do not disable verification, install broad Keychain trust exceptions, replace the CA with a client identity, or change ORM versions to hide this failure. See [the TLS investigation](aiven-tls-investigation.md) for executed checks and limitations.
+
+Relative `sslcert=aiven-ca.pem` resolves against the Prisma schema directory in this single-file setup. Absolute paths remain recommended for operator/container/Render clarity, but changing to an absolute path did **not** resolve the macOS rejection. `migrate status` uses `MIGRATION_DATABASE_URL` through `directUrl`; modifying only `DATABASE_URL` does not fix CLI settings. Use a Linux-local CA path inside Linux, not a macOS host path.
+
 ## 4. One-time migration and explicit synthetic seed
 
 Use a trusted operator machine with this reviewed source revision, Node/npm installed, and an **explicit separate** environment file (e.g. `/secure/path/salary-demo.env`, permissions 0600). Do not copy the local `server/.env`.
