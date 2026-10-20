@@ -104,6 +104,6 @@ npm run build
 
 Do not run database tests and CSV benchmarks concurrently. They refuse nonempty test application tables, create only isolated fixtures, then clean those fixtures. Inspect interrupted test runs rather than resetting the schema. Chromium tests use mocked APIs, not development mutations.
 
-`npm run build` creates ignored `client/dist` and `server/dist`; `npm run start -w server` starts the compiled API. It does **not** host the frontend. `npm run preview -w client` previews assets but is not a production deployment or the documented API proxy workflow. A reviewed HTTPS same-origin hosting/proxy configuration and production UI CSP remain pending; do not describe these local instructions as deployed production readiness.
+`npm run build` creates ignored `client/dist` and `server/dist`; `npm run start -w server` starts the compiled API. With `NODE_ENV=production`, it now hosts the built frontend as described in [deployment](deployment.md); strict TLS configuration and restricted runtime credentials are required. `npm run preview -w client` previews assets but is not a production deployment or the documented API proxy workflow. Production serving/CSP configuration is prepared; live HTTPS/proxy/provider verification remains pending. Do not describe these local instructions as deployed production readiness.
 
 For CSV examples, results, idempotency and timeout behavior see [Milestone 5](milestone-5.md). For the actual clean-install verification boundary and latest results see [Milestone 6](milestone-6.md).

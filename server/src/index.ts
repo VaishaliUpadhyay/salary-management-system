@@ -3,15 +3,19 @@ import { readEnv } from "./lib/env.js";
 import { prisma } from "./lib/prisma.js";
 import { verifyRuntimePermissions } from "./lib/runtime-security.js";
 
-const env = readEnv();
+import { fileURLToPath } from "node:url";
+
 try {
+  const env = readEnv();
   await prisma.$connect();
   await verifyRuntimePermissions(prisma);
   const server = createApp({
     db: prisma,
     origin: env.APP_ORIGIN,
     production: env.NODE_ENV === "production",
-  }).listen(env.PORT, "127.0.0.1", () => {
+    trustProxyHops: env.TRUST_PROXY_HOPS,
+    frontendDirectory: env.NODE_ENV === "production" ? fileURLToPath(new URL("../../client/dist/", import.meta.url)) : undefined,
+  }).listen(env.PORT, env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1", () => {
     console.info(`API listening on port ${env.PORT}`);
   });
   for (const signal of ["SIGINT", "SIGTERM"] as const) {

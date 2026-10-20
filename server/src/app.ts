@@ -1,5 +1,6 @@
 import { importRoutes } from "./modules/imports/routes.js";
 import express from "express";
+import { serveFrontend } from "./lib/frontend.js";
 import { masterDataRoutes } from "./modules/master-data/routes.js";
 import { randomUUID } from "node:crypto";
 import type { PrismaClient } from "@prisma/client";
@@ -13,17 +14,23 @@ export interface AppOptions {
   origin: string;
   production?: boolean;
   clock?: () => Date;
+  frontendDirectory?: string | undefined;
+  trustProxyHops?: 0 | 1;
 }
 export function createApp({
   db,
   origin,
   production = false,
+  frontendDirectory,
+  trustProxyHops = 0,
   clock = () => new Date(),
 }: AppOptions) {
   const app = express();
   app.disable("x-powered-by");
   app.set("query parser", "simple");
-  // No trust-proxy setting: a forwarded IP cannot bypass the local login limiter.
+  // Explicit opt-in only for a verified single ingress proxy; never trust the whole chain.
+  if (trustProxyHops !== 0 && trustProxyHops !== 1) throw new Error("Unsupported proxy configuration");
+  app.set("trust proxy", trustProxyHops);
   app.use((req, res, next) => {
     req.requestId = randomUUID();
     req.now = new Date(clock().getTime());
@@ -59,6 +66,9 @@ export function createApp({
     masterDataRoutes(db),
     analyticsRoutes(db),
   );
+  // Reserve every API path before static serving, including unknown versions.
+  app.use("/api", () => { throw new ApiError(404, "NOT_FOUND", "Route not found"); });
+  if (production && frontendDirectory) serveFrontend(app, frontendDirectory);
   app.use(() => {
     throw new ApiError(404, "NOT_FOUND", "Route not found");
   });

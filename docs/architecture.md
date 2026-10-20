@@ -2,7 +2,7 @@
 
 Approved by the user for Milestone 1 on 2026-10-15. The design-stage descriptions below are preserved; implementation evidence and remaining live checks are tracked in [milestone-1.md](milestone-1.md).
 
-**Current status:** Milestones 1–5 are implemented and user-confirmed complete. The design-stage wording below is historical; use [Milestone 6](milestone-6.md) for executed checks and outstanding delivery gaps, and [setup](setup.md) for fresh local installation. The approved Prisma range-check decision in [decisions](decisions.md) supersedes direct SELECT-warning inspection. The API currently runs separately from Vite; serving built assets on a production HTTPS origin has not been implemented or deployed.
+**Current status:** Milestones 1–5 are implemented and user-confirmed complete. The design-stage wording below is historical; use [Milestone 6](milestone-6.md) for executed checks and outstanding delivery gaps, and [setup](setup.md) for fresh local installation. The approved Prisma range-check decision in [decisions](decisions.md) supersedes direct SELECT-warning inspection. Development still runs Vite separately. Milestone 7 prepares Express to serve built assets on one production origin; cloud deployment is not performed. See [deployment](deployment.md).
 
 ## Scope and deployment shape
 

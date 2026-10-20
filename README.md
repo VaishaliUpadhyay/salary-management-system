@@ -8,6 +8,10 @@ A compensation-management MVP for one HR Manager, with a deterministic seed of 1
 
 React 19, TypeScript, Vite 8, Tailwind CSS 4, shadcn/ui and Recharts; Node.js 24, Express 5 and Zod; MySQL 8.x with Prisma 6; Vitest, Testing Library, Supertest and Playwright. The project is a modular monolith with `client/` and `server/` workspaces.
 
+## Production deployment preparation
+
+The approved Render + Aiven preparation is implemented; **no cloud deployment has been performed**. Production Express serves the built React frontend and API on one origin, with existing hash navigation, strict database TLS configuration and restricted runtime permissions. Follow [the deployment guide](docs/deployment.md) and review [Milestone 7 evidence](docs/milestone-7.md) before creating cloud resources. The local development workflow is unchanged.
+
 ## Local setup
 
 Prerequisites: Node.js 24.15+ within 24.x (validated/pinned: 24.20.0), npm 11 (validated: 11.19.0) and MySQL 8.x. Follow the [fresh setup guide](docs/setup.md) for schema creation, both migrations and restricted account provisioning. A new installation needs separate development and test schemas.
@@ -151,7 +155,7 @@ The benchmark verifies employee/salary/FX hashes before and after. It creates an
 
 [Requirements](docs/requirements.md) · [Architecture](docs/architecture.md) · [Database design](docs/database-design.md) · [API contracts](docs/api-contracts.md) · [Decisions](docs/decisions.md) · [Milestone 1](docs/milestone-1.md) · [Milestone 2](docs/milestone-2.md) · [Milestone 3](docs/milestone-3.md) · [Milestone 4](docs/milestone-4.md) · [Milestone 5](docs/milestone-5.md) · [Milestone 6](docs/milestone-6.md) · [Fresh setup](docs/setup.md) · [AI usage](docs/ai-usage.md)
 
-No deployment or demo-video evidence is recorded. Production same-origin hosting, proxy/TLS/UI CSP and load validation are pending. Only the three master-data GET lists are implemented; planned master write/detail routes need a scope decision, not an assumption that they exist.
+No deployment or demo-video evidence is recorded. Same-origin frontend serving and production security configuration are prepared; live proxy/TLS/grant verification and cloud load validation remain pending. Only the three master-data GET lists are implemented; planned master write/detail routes need a scope decision, not an assumption that they exist.
 
 Error handling uses shared, code-based user guidance with compact, accessible field errors and no user-facing technical references. CSV errors retain row numbers, while salary ranges are checked before submission. See [the error-handling audit](docs/error-handling-audit.md) for implementation details and actual validation results.
 
