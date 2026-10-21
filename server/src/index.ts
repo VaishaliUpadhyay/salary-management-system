@@ -25,28 +25,10 @@ try {
       }),
     );
   }
-} catch (error) {
+} catch {
   console.error(
-    "Startup failure type:",
-    error instanceof Error ? error.name : "Unknown",
+    "Server startup failed: verify database connectivity and restricted runtime credentials",
   );
-  console.error(
-    "Startup failure code:",
-    typeof error === "object" && error !== null && "code" in error
-      ? String(error.code)
-      : "Unknown",
-  );
-  console.error(
-    "Prisma error code:",
-    error instanceof Error && "errorCode" in error
-      ? String(error.errorCode)
-      : "Unknown",
-  );
+  await prisma.$disconnect();
+  process.exitCode = 1;
 }
-// } catch {
-//   console.error(
-//     "Server startup failed: verify database connectivity and restricted runtime credentials",
-//   );
-//   await prisma.$disconnect();
-//   process.exitCode = 1;
-// }
