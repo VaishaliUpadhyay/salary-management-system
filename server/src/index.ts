@@ -36,6 +36,12 @@ try {
       ? String(error.code)
       : "Unknown",
   );
+  console.error(
+    "Prisma error code:",
+    error instanceof Error && "errorCode" in error
+      ? String(error.errorCode)
+      : "Unknown",
+  );
 }
 // } catch {
 //   console.error(
